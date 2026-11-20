@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Snapshot Query Service</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Snapshot Query Service</h1>
+    <span class="health" id="health"><span class="dot"></span><span id="health-text">connecting…</span></span>
+    <div class="hero">
+      <span class="caption">current snapshot</span>
+      <div class="figure" id="hero-current">—</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- stat tiles -->
+    <section class="tiles" id="tiles">
+      <div class="tile"><div class="label">Records in current</div><div class="value" id="t-records">—</div></div>
+      <div class="tile"><div class="label">Active readers</div><div class="value" id="t-readers">0</div></div>
+      <div class="tile"><div class="label">Queries served</div><div class="value" id="t-queries">0</div></div>
+      <div class="tile"><div class="label">Version switches</div><div class="value" id="t-switches">0</div></div>
+      <div class="tile"><div class="label">Rollbacks</div><div class="value" id="t-rollbacks">0</div></div>
+      <div class="tile"><div class="label">Failed builds</div><div class="value" id="t-failed">0</div></div>
+      <div class="tile"><div class="label">Rejected publishes</div><div class="value" id="t-rejected">0</div></div>
+    </section>
+
+    <div class="grid">
+      <!-- build / gate pipeline -->
+      <section class="panel">
+        <h2>Build pipeline &amp; quality gates</h2>
+        <div id="builds"><div class="empty">No builds yet — start one from the controls.</div></div>
+      </section>
+
+      <!-- controls -->
+      <section class="panel controls">
+        <h2>Controls</h2>
+        <div class="inline">
+          <div>
+            <label class="field" for="build-count">Batch size (rows)</label>
+            <input type="number" id="build-count" value="200" min="1" max="100000" />
+          </div>
+          <div class="check" style="flex:0 0 auto">
+            <input type="checkbox" id="build-bad" />
+            <label for="build-bad">inject bad data (gates should fail)</label>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-build">Build in staging</button>
+        </div>
+
+        <label class="field" for="publish-select">Publish staged snapshot (gates passed)</label>
+        <select id="publish-select"></select>
+        <div class="btn-row">
+          <button id="btn-publish">Switch current to staged</button>
+          <button class="secondary" id="btn-rollback">Rollback to previous</button>
+        </div>
+
+        <label class="field">Fault injection (for drills)</label>
+        <div class="btn-row">
+          <button class="danger" id="btn-fault-fail">Fail next publish</button>
+          <button class="danger" id="btn-fault-crash">Crash mid-switch</button>
+        </div>
+        <div class="hint">“Fail next publish” aborts before the pointer swap — the old version keeps serving.
+        “Crash mid-switch” kills the process right after the atomic rename — restart the service and watch recovery converge.</div>
+      </section>
+    </div>
+
+    <div class="grid">
+      <!-- queries per snapshot: single-series bar chart -->
+      <section class="panel">
+        <h2>Queries per snapshot</h2>
+        <div id="chart"><div class="empty">No queries served yet.</div></div>
+        <div class="hint">Table view: the “queries” column in the versions table below lists the same values.</div>
+      </section>
+
+      <!-- query tester -->
+      <section class="panel">
+        <h2>Query tester</h2>
+        <div class="inline">
+          <div>
+            <label class="field" for="q-text">Search text</label>
+            <input type="text" id="q-text" placeholder="e.g. alpha or item-4" />
+          </div>
+          <div>
+            <label class="field" for="q-limit">Limit</label>
+            <input type="number" id="q-limit" value="20" min="1" max="10000" />
+          </div>
+        </div>
+        <div class="inline">
+          <div>
+            <label class="field" for="q-slow">Slow scan (ms/row)</label>
+            <input type="number" id="q-slow" value="0" min="0" max="100" />
+          </div>
+          <div>
+            <label class="field" for="q-snap">Pin snapshot (optional)</label>
+            <input type="text" id="q-snap" placeholder="e.g. snap-3" />
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-query">Run query</button>
+          <button class="secondary" id="btn-burst">Burst: 20 concurrent</button>
+          <button class="secondary" id="btn-demo">Demo: long query across a switch</button>
+        </div>
+        <div id="query-result"></div>
+        <div class="log" id="demo-log"></div>
+      </section>
+    </div>
+
+    <!-- versions table -->
+    <section class="panel">
+      <h2>Versions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Snapshot</th><th>State</th><th>Readers</th><th>Rows</th>
+            <th>Queries</th><th>Gates</th><th>Built at</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="versions"></tbody>
+      </table>
+    </section>
+
+    <!-- event timeline -->
+    <section class="panel">
+      <h2>Event timeline</h2>
+      <div class="events" id="events"></div>
+    </section>
+  </main>
+
+  <div id="tooltip"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

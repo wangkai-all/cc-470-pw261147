@@ -1,0 +1,13 @@
+{
+  "name": "snapshot-query-service",
+  "version": "1.0.0",
+  "description": "Queryable snapshot service: staging builds, quality gates, atomic switch, rollback",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "verify": "node scripts/verify.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
